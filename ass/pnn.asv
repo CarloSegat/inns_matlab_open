@@ -1,0 +1,52 @@
+load('loaded.mat');
+[x, y] = load_data(data);
+t = y;
+
+% parameters
+train_functions = ["trainscg", "trainrp", "trainbfg", "traincgb", ...
+    "traingdx", "trainoss", "traincgp", "traincgf"];
+best_trains = ["trainrp"];
+
+layouts{1} = [20, 20; 
+                25, 25; 
+                30, 30; 
+                35, 35; 
+                40, 40];
+layouts{2} = [15, 15, 15; 
+                13, 12, 13; 
+                20, 20, 20; 
+                25, 20, 20;
+                30, 30, 25;
+                35, 30, 25]
+layouts{3} = [12, 12, 12, 12;
+              15, 15, 15, 15;
+              20, 20, 15, 10];
+
+how_many_architectures = size(layouts{1}, 1) + size(layouts{2}, 1) + size(layouts{3}, 1);
+performcances = zeros(how_many_architectures, length(train_functions));
+
+arch_index = 1;
+all_indexes = get_indexes(116, 10);
+loss_used = strings(14, 8);
+cross_entropy = 0;
+
+for architecture=1:length(layouts)
+    for k=1:10
+        layers_neurons = layouts{architecture}(i, :);
+        net = patternnet(layers_neurons);
+        net = configure_net(net, train_functions(train_index), all_indexes(k,:,:));
+        [net,tr] = train(net,x,t);
+
+        predicted_y = net(x(:, logical(all_indexes(k,:,3))));
+        %performance = perform(net,t(logical(all_indexes(k,:,3))),predicted_y);
+        %view(net)
+
+        cross_entropy = cross_entropy + crossentropy(net,t(logical(all_indexes(k,:,3))),predicted_y);
+
+    end
+    performcances(arch_index, train_index) = cross_entropy / 10;
+    cross_entropy = 0;
+    loss_used(arch_index, train_index) = tr.performFcn;
+       
+  
+end

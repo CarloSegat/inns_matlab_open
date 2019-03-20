@@ -1,0 +1,103 @@
+load('loaded.mat');
+[x, y] = load_data(data);
+t = y;
+
+% parameters
+train_functions = ["trainscg", "trainrp", "trainbfg", "traincgb", ...
+    "traingdx", "trainoss", "traincgp", "traincgf"];
+best_trains = ["trainrp"];
+
+layouts{1} = [20, 20; 
+                25, 25; 
+                30, 30; 
+                35, 35; 
+                40, 40];
+layouts{2} = [15, 15, 15; 
+                13, 12, 13; 
+                20, 20, 20; 
+                25, 20, 20;
+                30, 30, 25;
+                35, 30, 25]
+layouts{3} = [12, 12, 12, 12;
+              15, 15, 15, 15;
+              20, 20, 15, 10];
+
+how_many_architectures = size(layouts{1}, 1) + size(layouts{2}, 1) + size(layouts{3}, 1);
+performcances = zeros(how_many_architectures, length(train_functions));
+
+arch_index = 1;
+all_indexes = get_indexes(116, 10);
+loss_used = strings(14, 8);
+cross_entropy = 0;
+
+for architecture=1:length(layouts)
+    for i=1:size(layouts{architecture}, 1)
+        for train_index=1:length(train_functions)
+            for k=1:10
+                layers_neurons = layouts{architecture}(i, :);
+                net = patternnet(layers_neurons);
+                net = configure_net(net, train_functions(train_index), all_indexes(k,:,:));
+                [net,tr] = train(net,x,t);
+                
+                predicted_y = net(x(:, logical(all_indexes(k,:,3))));
+                %performance = perform(net,t(logical(all_indexes(k,:,3))),predicted_y);
+                %view(net)
+
+                cross_entropy = cross_entropy + crossentropy(net,t(logical(all_indexes(k,:,3))),predicted_y);
+                
+            end
+            performcances(arch_index, train_index) = cross_entropy / 10;
+            cross_entropy = 0;
+            loss_used(arch_index, train_index) = tr.performFcn;
+        end
+        
+        arch_index = arch_index + 1;
+    end
+end
+
+
+
+
+% % Test the Network
+% predicted_y = net(x);
+% performance = perform(net,t,predicted_y);
+% 
+% % Recalculate Training, Validation and Test Performance
+% trainTargets = t .* tr.trainMask{1};
+% valTargets = t .* tr.valMask{1};
+% testTargets = t .* tr.testMask{1};
+% trainPerformance = perform(net,trainTargets,predicted_y)
+% valPerformance = perform(net,valTargets,predicted_y)
+% testPerformance = perform(net,testTargets,predicted_y)
+% 
+% % prediction and actual data preparation
+% test_x_indexes = tr.testMask{1} == 1;
+% test_x_indexes = test_x_indexes(1, :);
+% x_test = x(:, test_x_indexes);
+% y_test_probabilities = sim(net, x);
+% y_test_prediction = vec2ind(y_test_probabilities);
+% 
+% all_labels = vec2ind(t);
+% y_test_true = all_labels(test_x_indexes);
+% 
+% % metrics calculation
+% confusion_matrix = confusionmat(all_labels, y_test_prediction);
+% [sensitivity, specificity, false_nagative_rate, false_positive_rate] = evaluate(confusion_matrix);
+% 
+% performcances(arch_index, train_index, 1) = sensitivity;
+% performcances(arch_index, train_index, 2) = specificity;
+% performcances(arch_index, train_index, 3) = false_nagative_rate;
+% performcances(arch_index, train_index, 4) = false_positive_rate;
+% 
+% 
+% view(net)
+% 
+% % Plots
+% % Uncomment these lines to enable various plots.
+% %figure, plotperform(tr)
+% %figure, plottrainstate(tr)
+% %figure, ploterrhist(e)
+% figure, plotconfusion(t,predicted_y)
+% %figure, plotroc(t,y)
+% 
+
